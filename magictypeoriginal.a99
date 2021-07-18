@@ -1,0 +1,212 @@
+*** MAGIC TYPE BY MIKE WARD ***
+*** 80-COLUMN DRIVER (C) 1989 ***
+*** V 1.1 ***
+       REF VMBR,VSBR,VSBW,VMBW,VWTR,KSCAN
+*
+*SET UP BITMAP MODE
+*
+START  CLR @>8374
+       LI R0,>711
+       BLWP @VWTR
+       LI R0,>01F0
+       BLWP @VWTR
+       LI R0,>206
+       BLWP @VWTR
+       LI R0,>3FF
+       BLWP @VWTR
+       LI R0,>403
+       BLWP @VWTR
+       LI R0,>536
+       BLWP @VWTR
+       LI R0,>1B00
+       LI R1,>D000
+       BLWP @VSBW
+       LI R0,>1800
+       CLR R2
+NQ     CLR R1
+L1     BLWP @VSBW
+       INC R0
+       AI R1,>100
+       CI R1,>0
+       JNE L1
+       INC R2
+       CI R2,3
+       JNE NQ
+CS     CLR R0
+       CLR R1
+L2     BLWP @VSBW
+       INC R0
+       CI R0,>1800
+       JNE L2
+       LI R0,>2000
+       LI R1,>1E00
+L3     BLWP @VSBW
+       INC R0
+       CI R0,>3800
+       JNE L3
+       LI R0,>0002
+       BLWP @VWTR
+       LI R0,>01E0
+       BLWP @VWTR
+       LI R0,>07EE
+       BLWP @VWTR
+       B @MENU
+*
+* 80-COLUMN DRIVER ROUTINE
+* TO USE, CHARACTER IN R13(32-127), ROW IN R14(0-23),
+* COLUMN IN R15(0-79), THEN BL @OUTPUT
+* R13 IS MODIFIED, AND R14 & R15 ARE UPDATED
+*
+OUTPUT
+* COMPUTE FOR CHAR DATA
+       AI R13,-32        *FOR OFFSET
+       SLA R13,3
+       AI R13,TABLE      *FOR ADDRESS
+* COMPUTE FOR BASE SCREEN ADDRESS
+       MOV R14,R12
+       SLA R12,8         *X >100 ROW ADDRESS
+       CLR R10
+       A R15,R10
+       A R15,R10
+       A R15,R10
+       AI R10,8
+       MOV R10,R9
+       ANDI R9,7
+       A R10,R12         *R12=ADDRESS
+       S R9,R12          *R9=SHIFT
+       INC R9
+       CLR R7            *COUNTER
+       INC R13           *FIRST ROW IS BLANK
+DRLP   INC R12
+       CLR R8
+       MOVB *R13+,R8
+       MOV R8,@BUF
+       LI R6,>E000       *BITMASK
+       MOV R12,R0
+       LI R1,BUF2
+       LI R2,2
+       BLWP @VMBR
+       CI R9,0
+       JEQ NSHIFT
+       MOV R9,R0
+       MOV @BUF,R1
+       SRL R1,0
+       MOV R1,@BUF
+       SRL R6,0
+NSHIFT SZC R6,@BUF2      *'AND' BUF2 WITH >1FFF TO CLEAR REQUIRED 3 PIXELS
+       SOC @BUF,@BUF2    *'OR' BUF INTO BUF2
+       MOV R12,R0
+       LI R1,BUF2
+       LI R2,2
+       BLWP @VMBW
+       INC R7
+       CI R7,7
+       JLT DRLP
+       INC R15
+       CI R15,80
+       JLT DNECHR
+       CLR R15
+       INC R14
+DNECHR B *R11
+BUF    BSS 2
+BUF2   BSS 2
+TABLE  DATA >0000,>0000,>0000,>0000          * SPACE
+       DATA >0040,>4040,>4040,>0040          * !
+       DATA >00A0,>A0A0,>0000,>0000          * "
+       DATA >0000,>A0E0,>A0E0,>A000          * #
+       DATA >0040,>E0C0,>4060,>E040          * $
+       DATA >00A0,>A020,>4080,>A0A0          * %
+       DATA >0040,>A040,>40A0,>A060          * &
+       DATA >0040,>4040,>0000,>0000          * '
+       DATA >0020,>4080,>8080,>4020          * (
+       DATA >0080,>4020,>2020,>4080          * )
+       DATA >0000,>40A0,>40A0,>4000          * *
+       DATA >0000,>4040,>E040,>4000          * +
+       DATA >0000,>0000,>0040,>4080          * ,
+       DATA >0000,>0000,>E000,>0000          * -
+       DATA >0000,>0000,>0000,>0040          * .
+       DATA >0020,>2040,>4040,>8080          * /
+       DATA >0040,>A0A0,>A0A0,>A040          * 0
+       DATA >0040,>C040,>4040,>40E0          * 1
+       DATA >0040,>A020,>2040,>80E0          * 2
+       DATA >0040,>A020,>4020,>A040          * 3
+       DATA >00A0,>A0A0,>E020,>2020          * 4
+       DATA >00E0,>8080,>E020,>A040          * 5
+       DATA >0060,>8080,>C0A0,>A040          * 6
+       DATA >00E0,>2020,>2040,>4040          * 7
+       DATA >0040,>A0A0,>40A0,>A040          * 8
+       DATA >0040,>A0A0,>6020,>20C0          * 9
+       DATA >0000,>0040,>0040,>0000          * :
+       DATA >0000,>0040,>0040,>8000          * ;
+       DATA >0000,>2040,>8040,>2000          * <
+       DATA >0000,>00E0,>00E0,>0000          * =
+       DATA >0000,>8040,>2040,>8000          * >
+       DATA >0040,>A020,>2040,>0040          * ?
+       DATA >0040,>A0E0,>E0E0,>A040          * @
+       DATA >0040,>A0A0,>E0A0,>A0A0          * A
+       DATA >00C0,>A0A0,>C0A0,>A0C0          * B
+       DATA >0040,>A080,>8080,>A040          * C
+       DATA >00C0,>A0A0,>A0A0,>A0C0          * D
+       DATA >00E0,>8080,>C080,>80E0          * E
+       DATA >00E0,>8080,>C080,>8080          * F
+       DATA >0040,>A080,>A0A0,>A060          * G
+       DATA >00A0,>A0A0,>E0A0,>A0A0          * H
+       DATA >00E0,>4040,>4040,>40E0          * I
+       DATA >0020,>2020,>20A0,>A040          * J
+       DATA >00A0,>A0C0,>80C0,>A0A0          * K
+       DATA >0080,>8080,>8080,>80E0          * L
+       DATA >00A0,>E0E0,>E0A0,>A0A0          * M
+       DATA >00A0,>E0E0,>E0E0,>E0A0          * N
+       DATA >00E0,>A0A0,>A0A0,>A0E0          * O
+       DATA >00C0,>A0A0,>C080,>8080          * P
+       DATA >0040,>A0A0,>A0A0,>E060          * Q
+       DATA >00C0,>A0A0,>C0A0,>A0A0          * R
+       DATA >0040,>A080,>4020,>A040          * S
+       DATA >00E0,>4040,>4040,>4040          * T
+       DATA >00A0,>A0A0,>A0A0,>A0E0          * U
+       DATA >00A0,>A0A0,>A0A0,>4040          * V
+       DATA >00A0,>A0A0,>E0E0,>E0A0          * W
+       DATA >00A0,>A0A0,>40A0,>A0A0          * X
+       DATA >00A0,>A0A0,>4040,>4040          * Y
+       DATA >00E0,>2020,>4080,>80E0          * Z
+       DATA >00E0,>8080,>8080,>80E0          * [
+       DATA >0080,>8040,>4040,>2020          * \
+       DATA >00E0,>2020,>2020,>20E0          * ]
+       DATA >0040,>A000,>0000,>0000          * ^
+       DATA >0000,>0000,>0000,>00E0          * _
+       DATA >0080,>4000,>0000,>0000          * `
+       DATA >0000,>0000,>40A0,>A060          * a
+       DATA >0080,>8080,>C0A0,>A0C0          * b
+       DATA >0000,>0000,>6080,>8060          * c
+       DATA >0020,>2020,>60A0,>A060          * d
+       DATA >0000,>0000,>60E0,>8060          * E
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+* JUNK FOR TESTING`
+MENU   CLR R14
+       CLR R15
+LPXXX  BLWP @KSCAN
+       CLR R1
+       MOVB @>8375,R1
+       CI R1,>FF00
+       JEQ LPXXX
+       SWPB R1
+       MOV R1,R13
+       BL @OUTPUT
+       LI R1,>1000
+LPXX2  DEC R1
+       JNE LPXX2
+       JMP LPXXX
+       END START
+
